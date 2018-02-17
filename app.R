@@ -26,7 +26,8 @@ library(dygraphs)
 library(magrittr)
 library(dplyr)
 library(sf)
-library(networkD3)
+library(DT)
+#library(networkD3)
 library(purrr)
 
 options(shiny.sanitize.errors = FALSE)
@@ -51,13 +52,13 @@ server <- function(input, output,session){
     fluidPage(                                  #     move the ui into the server function
       fluidRow(
         column(12,
-               HTML("<h3> <a href='?home'>Home</a> |",
-                    "<a href='?mapa'>Mapa</a> |",
-                    "<a href='?serie'>Série</a> |",
-                    "<a href='?tabela'>Tabela</a> |",
-                    "<a href='?sucursal'>Sucursal</a> |",
-                    "<a href='?veiculos'>Veículos</a> |",
-                    "<a href='?serie_rj'>Série Rio de Janeiro</a>",
+               HTML("<h3> <a href='?home'></a>",
+                    "<a href='?mapa'></a>",
+                    "<a href='?serie'></a>",
+                    "<a href='?tabela'></a>",
+                    "<a href='?sucursal'></a>",
+                    "<a href='?veiculos'></a>",
+                    "<a href='?serie_rj'></a>",
                     "</h3>")
         )
       ),
@@ -78,7 +79,7 @@ validFiles = c("home.R",                             # valid files must be hardc
 
 #    names to prevent Unix case problems)
 fname = isolate(session$clientData$url_search)       # isolate() deals with reactive context
-if(nchar(fname)==0) { fname = "?home" }              # blank means home page
+if(nchar(fname)==0) { fname = "?mapa" }              # blank means home page
 fname = paste0(substr(fname, 2, nchar(fname)), ".R") # remove leading "?", add ".R"
 
 cat(paste0("Nome da sessão: ", fname, ".\n"))      # print the URL for this session

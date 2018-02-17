@@ -19,7 +19,7 @@ output$porto_page <- renderUI(fluidPage(
                            choices = meses, selected = "Janeiro")
              )),
            
-           mainPanel("Série temporal",
+           mainPanel("",
                      status="primary",
                      dygraphOutput("dygraph"))))
 )

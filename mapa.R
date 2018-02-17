@@ -31,7 +31,7 @@ output$porto_page <- renderUI(fluidPage(
              actionButton("mostrar","Ir para mapa")
            ),
            
-           mainPanel("Mapa do estado",status="primary",
+           mainPanel("",status="primary",
                      leaflet::leafletOutput("mapa1"),height="500px")))
 )
   
