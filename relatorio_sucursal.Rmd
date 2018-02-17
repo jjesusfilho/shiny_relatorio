@@ -1,0 +1,194 @@
+---
+#title: Criminalidade em São Paulo - Análise de Tendência
+#author: Porto Seguro
+params: 
+   sucursal: NA
+   inicio: NA
+   fim: NA
+   crime: NA
+   municipio: NA
+output:
+  bookdown::word_document2:
+    reference_docx: "/srv/porto-seguro/modelo.docx"
+    fig_cap: true
+    fig_height: 8
+    fig_width: 15
+spacing: 1.5
+---
+
+```{r config, echo=FALSE, message=FALSE, warning=FALSE, cache=FALSE,include=FALSE}
+library(magrittr)
+library(ggplot2)
+library(pander)
+library(timetk)
+library(zoo)
+library(lubridate)
+panderOptions('table.alignment.default', function(df)
+    ifelse(sapply(df, is.numeric), 'right', 'left'))
+panderOptions('table.split.table', Inf)
+panderOptions('table.split.cells', Inf)
+panderOptions('big.mark', ",")
+panderOptions('keep.trailing.zeros', TRUE)
+panderOptions("table.style", "grid")
+load("~/Projetos/porto-seguro/base1.rda")
+
+inicio1<-dmy(paste0("01/",params$inicio)) %>% months(abbreviate = F)
+fim1<-dmy(paste0("01/",params$fim)) %>% months(abbreviate = F)
+inicio_n<-stringr::str_extract(params$inicio,"\\d{2}") %>% as.numeric()
+fim_n<-stringr::str_extract(params$fim,"\\d{2}") %>% as.numeric()
+```
+
+
+# Introdução
+
+Trata-se de um relatório descritivo sobre a sucursal `r params$sucursal`para o período de `r inicio1` a `r fim1`. Abaixo é possível consultar quais as dinâmicas criminais para esta região.
+
+\newline
+
+No gráfico abaixo verifica-se que em relação ao de 2017, a região apresentou os seguintes crimes (em números absolutos). Observa-se que na referida região o crime de `r params$crime` apresenta um número maior de registros policiais durante o período.
+
+
+No gráfico abaixo é possível observar a quantidade de registros de ocorrências para os crimes de fraude, furto, homicídio doloso, lesão corporal, roubo e tráfico para a sucursal `params$sucursal`  no período de janeiro a julho de 2017.
+
+## Gráfico 1. Número de registro de ocorrências por crime (de janeiro a julho de 2017).
+
+```{r registros, echo=FALSE, cache=TRUE}
+crime_sucursal<-sp_porto %>%
+  dplyr::filter(unidade==params$sucursal,as.numeric(mes)>=inicio_n,as.numeric(mes)<=fim_n) %>%
+  dplyr::ungroup() %>% 
+  dplyr::select(mes,fraude:trafico) %>% 
+  dplyr::group_by(mes) %>% 
+  dplyr::summarize_all(sum) %>% 
+  dplyr::ungroup() %>% 
+  dplyr::select(-mes) %>% 
+  dplyr::summarize_all(sum) %>% 
+  tidyr::gather(key="crime",value="numero")
+  
+crime_sucursal$crime<-with(crime_sucursal,reorder(crime,numero))
+
+crime_sucursal %>% 
+ggplot(aes(x=crime,y=numero,fill=crime))+
+  geom_bar(stat="identity",show.legend = FALSE) +
+  geom_text(aes(x=crime,y=numero,label=numero),vjust=-.5)+
+  labs(title = "", x ="crime",y="Número de crimes",caption="Fontes: S2 Assessoria e SSP/SP") +
+  tidyquant::theme_tq() +
+  scale_fill_manual(values=ggpubr::get_palette("Blues",6))+
+  theme(text = element_text(size=10)) +
+  scale_y_continuous(labels = scales::comma)+
+  scale_x_discrete()
+
+```
+
+
+```{r gg_crime, echo=FALSE, cache=TRUE}
+gg_crime<-sp_porto %>% 
+  dplyr::filter(unidade==params$sucursal) %>% 
+  dplyr::select(mes, fraude:trafico) %>%
+  tidyr::gather("crime","numero",-mes) %>% 
+  dplyr::arrange(desc(numero))
+
+
+max_crim<-gg_crime %>%
+  dplyr::group_by(crime) %>%
+  dplyr::summarize(media=mean(numero)) %>% 
+  dplyr::arrange(desc(media))
+```
+
+Já no gráfico abaixo, constata-se que o crime de `r max_crim$crime[]`  apresentou um elevado número de registros em todos os meses da série, com uma média mensal  de `r max_crim$media[1]`.  
+
+## Gráfico 2. Distribuição dos crimes por meses
+
+
+```{r gg_crime2, echo=FALSE, cache=TRUE}
+
+gg_crime %>% ggplot(aes(x=mes,y=numero,fill=crime)) +
+    geom_bar(stat = "identity") +
+    labs(title = "", x ="",y="Número de crimes", fill = "Crime",caption="Fontes: S2 Assessoria e SSP/SP") +
+    tidyquant::theme_tq() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          text = element_text(size=10)) +
+    tidyquant::scale_fill_tq() +
+    scale_y_continuous(labels = scales::comma)
+
+```
+
+\newline
+
+
+## Tabela 1. Número de crimes por mês no entorno da `r params$sucursal` (ano 2017)
+
+```{r crime_mes, echo=FALSE, cache=TRUE}
+crime_sucursal_mes<-sp_porto %>%
+  dplyr::filter(unidade==params$sucursal) %>%
+  dplyr::ungroup() %>% 
+  dplyr::select(mes,fraude:trafico) %>% 
+  dplyr::group_by(mes) %>% 
+  dplyr::summarize_all(sum) %>% 
+  dplyr::ungroup() %>%
+  pander()
+  
+  
+```
+
+\newline
+
+Mapa 1 – Relação entre a criminalidade da região da sucursal `params$sucursal` com o município `params$municipio` para o ano de 2017
+
+
+```{r crime_sucursal, echo=FALSE, message=FALSE}
+ ggplot(mapa_gru)+
+  geom_sf(aes(fill=delitos))+
+  geom_text(aes(x=lon,y=lat),
+            label=mapa_gru$CODIGO,
+            size=5)+
+  scale_fill_viridis_c(direction=-1,breaks=c(50,100,200,500,1000,1500,2000,3000,4000))+
+  guides(fill=guide_legend("Número de delitos"))+
+  theme(
+    legend.position = "bottom"
+  )+
+  theme_void()
+
+```
+
+\newline
+
+## Tabela 2. Lista de bairros do município de `r params$municipio` e respectivos códigos do mapa (período todo, de janeiro a julho 2017).
+
+```{r municipios, echo=FALSE, message=FALSE}
+mapa_gru[c("BAIRRO","CODIGO","delitos")] %>% 
+ magrittr::set_names(c("Bairro","Código","Criminalidade")) %>% 
+  dplyr::mutate(Criminalidade=stringr::str_replace(Criminalidade,",",".")) %>% 
+  pander()
+  
+```
+
+\newline
+
+
+## Gráfico 4 - Gráfico 4. Tendência de registro de ocorrências para a região da `r params$sucursal` para o ano de 2017
+
+```{r tendencia, echo=FALSE, message=FALSE}
+serie_crime_tbl <- sp_porto %>%  
+      dplyr::filter(unidade==params$sucursal) %>%
+      dplyr::ungroup() %>%
+      dplyr::select(params$crime) %>% 
+      ts(start=c(2017,1),end=c(2017,7),frequency=12) %>% 
+      timetk::tk_tbl(rename_index="date") %>% 
+      dplyr::mutate(date=as.Date(date))
+      
+names(serie_crime_tbl)[2]<-"crime"
+serie_crime_tbl %>%
+  ggplot(aes(date,crime)) +
+  geom_line(col = tidyquant::palette_light()[1]) +
+  geom_point(col = tidyquant::palette_light()[1]) +
+  tidyquant::geom_ma(ma_fun = SMA, n = 7, size = 1) +
+  tidyquant::theme_tq() +
+  theme(legend.position="none",
+          text = element_text(size=20))+
+  scale_x_date(date_breaks = "1 month", date_labels = "%B") +
+labs(title = paste("Evolução dos", params$crime, "na região da sucursal", params$sucursal), x = "",y=params$crime,caption="Fontes: S2 Assessoria e ISP-RJ")
+
+```
+
+
+
