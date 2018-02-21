@@ -77,7 +77,9 @@ tabela<-eventReactive(input$mostrar,{
   
   observeEvent(input$mostrar,{
     
-    ll_map<-tabela()
+    ll_map<-tabela() %>% 
+      group_by(municipio,lon,lat) %>% 
+      summarise_at(vars(furto_veiculo,total_furto,roubo_veiculo,total_roubo,homicidio,trafico,fraude),funs(sum))
     
     proxy<-leaflet::leafletProxy("mapa1",data=ll_map) %>% 
       leaflet::clearMarkers() %>% 

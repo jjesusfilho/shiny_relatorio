@@ -1,5 +1,5 @@
 ### uiPorto
-### v1.3 - Tom Weishaar - Sep 2017
+### v1.3 - José de Jesus Filho - Fev 2018
 
 ### v1.1 fixes a security issue
 ###    for details, see: https://groups.google.com/forum/?utm_source=digest&utm_medium=email#!topic/shiny-discuss/zxoLK1kKTCw)
